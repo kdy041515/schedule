@@ -5,13 +5,29 @@
 	<title>Basic initialization</title>
 	<script src="./dhtmlxscheduler.js?v=7.2.6" charset="utf-8"></script>
 	<link rel="stylesheet" href="./dhtmlxscheduler.css" type="text/css" charset="utf-8">
-	<style>
-		html, body{
-			margin:0px;
-			padding:0px;
-			height:100%;
-			overflow:hidden;
-		}
+        <style>
+                html, body{
+                        margin:0px;
+                        padding:0px;
+                        height:100%;
+                        overflow:hidden;
+                }
+
+                #event_form{
+                        position:fixed;
+                        top:0;
+                        left:0;
+                        width:300px;
+                        height:100%;
+                        overflow-y:auto;
+                        background:#f4f4f4;
+                        padding:10px;
+                        box-sizing:border-box;
+                }
+
+                #scheduler_here{
+                        margin-left:320px;
+                }
 
 		.violet{
 			--dhx-scheduler-event-background: linear-gradient(180deg, #D071EF 0%, #EE71D5 100%);
@@ -31,17 +47,57 @@
                 
 			});
 
-			scheduler.config.cascade_event_display = true;
-			scheduler.config.details_on_create = true;
-			scheduler.config.details_on_dblclick = true;
-            scheduler.config.time_step = 1; // 1초 단위
+            scheduler.config.cascade_event_display = true;
+            scheduler.config.details_on_create = true;
+            scheduler.config.details_on_dblclick = true;
+            scheduler.config.time_step = 1/60; // 1초 단위
+            scheduler.config.hour_date = "%H:%i:%s";
+
+            scheduler.templates.tooltip_date_format = scheduler.date.date_to_str("%Y-%m-%d %H:%i:%s");
+
+            scheduler.form_blocks.time = {
+                render:function(sns){
+                    function opts(max){
+                        let html="";
+                        for(let i=0;i<max;i++){
+                            let v=("0"+i).slice(-2);
+                            html+=`<option value="${i}">${v}</option>`;
+                        }
+                        return html;
+                    }
+                    function sel(){
+                        return `<select data-unit='hour'>${opts(24)}</select>:`+
+                               `<select data-unit='minute'>${opts(60)}</select>:`+
+                               `<select data-unit='second'>${opts(60)}</select>`;
+                    }
+                    const sectionHeight = sns.height ? `style='height:${sns.height}px;'` : "";
+                    return `<div class='dhx_section_time' ${sectionHeight}>${sel()}<span class='dhx_section_time_spacer'> &nbsp;&ndash;&nbsp; </span>${sel()}</div>`;
+                },
+                set_value:function(node,value,ev){
+                    const s=node.getElementsByTagName('select');
+                    s[0].value=ev.start_date.getHours();
+                    s[1].value=ev.start_date.getMinutes();
+                    s[2].value=ev.start_date.getSeconds();
+                    s[3].value=ev.end_date.getHours();
+                    s[4].value=ev.end_date.getMinutes();
+                    s[5].value=ev.end_date.getSeconds();
+                },
+                get_value:function(node,ev){
+                    const s=node.getElementsByTagName('select');
+                    const start=new Date(ev.start_date);
+                    start.setHours(parseInt(s[0].value,10),parseInt(s[1].value,10),parseInt(s[2].value,10));
+                    const end=new Date(ev.end_date);
+                    end.setHours(parseInt(s[3].value,10),parseInt(s[4].value,10),parseInt(s[5].value,10));
+                    return {start_date:start,end_date:end};
+                }
+            };
 
 			scheduler.templates.event_class = function(start, end, event){
 				return event.classname || "";
 			};
 			scheduler.init('scheduler_here',new Date(2024,3,20),"week");
-			scheduler.parse([
-				{ id:1, classname:"blue", start_date: "2024-04-15 02:00", end_date: "2024-04-15 10:20", text:"Product Strategy Hike" },
+                        scheduler.parse([
+                                { id:1, classname:"blue", start_date: "2024-04-15 02:00", end_date: "2024-04-15 10:20", text:"Product Strategy Hike" },
 				{ id:2, classname:"blue", start_date: "2024-04-15 12:00", end_date: "2024-04-15 16:00", text:"Agile Meditation and Release" },
 				{ id:3, classname:"violet", start_date: "2024-04-16 06:00", end_date: "2024-04-16 11:00", text:"Tranquil Tea Time" },
 				{ id:4, classname:"green", start_date: "2024-04-16 11:30", end_date: "2024-04-16 19:00", text:"Sprint Review and Retreat" },
@@ -55,13 +111,78 @@
 				{ id:12, classname:"yellow", start_date: "2024-04-19 11:00", end_date: "2024-04-19 17:00", text:"Quality Assurance Spa Day" },
 				{ id:13, classname:"violet", start_date: "2024-04-20 01:00", end_date: "2024-04-20 03:00", text:"Motion Cycling Adventure" },
 				{ id:14, classname:"blue", start_date: "2024-04-20 10:00", end_date: "2024-04-20 16:00", text:"Competitor Analysis Beach Day" },
-				{ id:15, classname:"blue", start_date: "2024-04-21 02:00", end_date: "2024-04-21 06:00", text:"Creativity Painting Retreat" }
-			]);
-		});
+                                { id:15, classname:"blue", start_date: "2024-04-21 02:00", end_date: "2024-04-21 06:00", text:"Creativity Painting Retreat" }
+                        ]);
+
+            function toInputValue(date){
+                const tz = date.getTimezoneOffset() * 60000;
+                return new Date(date - tz).toISOString().slice(0,19);
+            }
+
+            let currentId = null;
+
+            function fillForm(ev){
+                document.getElementById("form_text").value = ev.text || "";
+                document.getElementById("form_start").value = toInputValue(ev.start_date);
+                document.getElementById("form_end").value = toInputValue(ev.end_date);
+            }
+
+            function fillFormById(id){
+                if(!id) return;
+                const ev = scheduler.getEvent(id);
+                if(ev){
+                    currentId = id;
+                    fillForm(ev);
+                }
+            }
+
+            scheduler.attachEvent("onClick", function(id){
+                fillFormById(id);
+                return true;
+            });
+
+            scheduler.attachEvent("onEventDrag", function(id){
+                fillFormById(id);
+                return true;
+            });
+
+            scheduler.attachEvent("onEventChanged", function(id){
+                fillFormById(id);
+                return true;
+            });
+
+            scheduler.attachEvent("onEventAdded", function(id){
+                fillFormById(id);
+                return true;
+            });
+
+            document.getElementById("form_save").addEventListener("click", function(){
+                if(!currentId) return;
+                const ev = scheduler.getEvent(currentId);
+                if(!ev) return;
+                ev.text = document.getElementById("form_text").value;
+                ev.start_date = new Date(document.getElementById("form_start").value);
+                ev.end_date = new Date(document.getElementById("form_end").value);
+                scheduler.updateEvent(currentId);
+            });
+
+            document.getElementById("form_cancel").addEventListener("click", function(){
+                if(currentId) fillFormById(currentId);
+            });
+
+                });
 	</script>
 </head>
 <body>
-	<div id="scheduler_here" class="dhx_cal_container" style='width:100%; height:100%;'>
+        <div id="event_form">
+                <h3>Event Details</h3>
+                <label>Text: <input type="text" id="form_text"></label><br/>
+                <label>Start: <input type="datetime-local" id="form_start" step="1"></label><br/>
+                <label>End: <input type="datetime-local" id="form_end" step="1"></label><br/>
+                <button id="form_save">Save</button>
+                <button id="form_cancel">Cancel</button>
+        </div>
+        <div id="scheduler_here" class="dhx_cal_container" style='width:100%; height:100%;'>
 		<div class="dhx_cal_navline">
 			<div class="dhx_cal_prev_button"></div>
 			<div class="dhx_cal_next_button"></div>
@@ -74,7 +195,8 @@
 
 		<div class="dhx_cal_header">
 		</div>
-		<div class="dhx_cal_data">
-		</div>
-	</div>
-</div>
+                <div class="dhx_cal_data">
+                </div>
+        </div>
+</body>
+</html>
