@@ -4,37 +4,16 @@
 	<title>Basic initialization</title>
 	<script src="./dhtmlxscheduler.js?v=7.2.6" charset="utf-8"></script>
 	<link rel="stylesheet" href="./dhtmlxscheduler.css" type="text/css" charset="utf-8">
-      <style>
-        html, body{
-                margin:0px;
-                padding:0px;
-                height:100%;
-                overflow:hidden;
-        }
-        #event_form{
-                position:fixed;
-                top:0;
-                left:0;
-                width:300px;
-                height:100%;
-                overflow-y:auto;
-                background:#f4f4f4;
-                padding:10px;
-                box-sizing:border-box;
-        }
+        <style>
+                html, body{
+                        margin:0px;
+                        padding:0px;
+                        height:100%;
+                        overflow:hidden;
+                }
 
-        #scheduler_here{
-                margin-left:320px;
-        }
-		.violet{
-			--dhx-scheduler-event-background: linear-gradient(180deg, #D071EF 0%, #EE71D5 100%);
-		}
-		.green{
-			--dhx-scheduler-event-background: linear-gradient(180deg, #12D979 0%, #1ECDEB 100%);
-		}
-		.yellow{
-			--dhx-scheduler-event-background: linear-gradient(180deg, #FFB725 0%, #FFBB25 31.25%, #FAEA27 100%);
-		}
+                #scheduler_here{
+                }
 	</style>
     
 	<script>
@@ -48,8 +27,31 @@
             scheduler.config.details_on_dblclick = true;
             scheduler.config.time_step = 1/60; // 1초 단위
             scheduler.config.hour_date = "%H:%i:%s";
+            scheduler.config.drag_move = false;
+            scheduler.config.drag_resize = false;
+
+            scheduler.config.icons_select = ["icon_edit","icon_delete","icon_details"];
+            scheduler.locale.labels.icon_details = "detail";
+
+            scheduler._click.buttons.details = function(id){
+                const ev = scheduler.getEvent(id);
+                if(ev && ev.href){
+                    window.open(ev.href, "_blank");
+                }
+            };
 
             scheduler.templates.tooltip_date_format = scheduler.date.date_to_str("%Y-%m-%d %H:%i:%s");
+
+            const colorMap = {};
+            function colorFor(text){
+                if(colorMap[text]) return colorMap[text];
+                let hash = 0;
+                for(let i=0;i<text.length;i++) hash = text.charCodeAt(i) + ((hash<<5)-hash);
+                const hue = Math.abs(hash) % 360;
+                const color = `hsl(${hue},70%,40%)`;
+                colorMap[text] = color;
+                return color;
+            }
 
             scheduler.form_blocks.time = {
                 render:function(sns){
@@ -88,96 +90,32 @@
                 }
             };
 
-			scheduler.templates.event_class = function(start, end, event){
-				return event.classname || "";
-			};
-			scheduler.init('scheduler_here',new Date(2024,3,20),"week");
-             scheduler.parse([
-                                { id:1, classname:"blue", start_date: "2024-04-15 02:00", end_date: "2024-04-15 10:20", text:"Product Strategy Hike" },
-				{ id:2, classname:"blue", start_date: "2024-04-15 12:00", end_date: "2024-04-15 16:00", text:"Agile Meditation and Release" },
-				{ id:3, classname:"violet", start_date: "2024-04-16 06:00", end_date: "2024-04-16 11:00", text:"Tranquil Tea Time" },
-				{ id:4, classname:"green", start_date: "2024-04-16 11:30", end_date: "2024-04-16 19:00", text:"Sprint Review and Retreat" },
-				{ id:5, classname:"violet", start_date: "2024-04-17 01:00", end_date: "2024-04-17 03:00", text:"Kayaking Workshop" },
-				{ id:6, classname:"yellow", start_date: "2024-04-17 06:00", end_date: "2024-04-17 08:00", text:"Stakeholder Sunset Yoga Session" },
-				{ id:7, classname:"green", start_date: "2024-04-17 07:00", end_date: "2024-04-17 12:00", text:"Roadmap Alignment Walk" },
-				{ id:8, classname:"violet", start_date: "2024-04-17 13:00", end_date: "2024-04-17 18:00", text:"Mindful Team Building" },
-				{ id:9, classname:"blue", start_date: "2024-04-18 01:00", end_date: "2024-04-18 18:00", text:"Cross-Functional Expedition" },
-				{ id:10, classname:"yellow", start_date: "2024-04-18 14:00", end_date: "2024-04-18 20:00", text:"User Feedback Picnic" },
-				{ id:11, classname:"blue", start_date: "2024-04-19 03:00", end_date: "2024-04-19 08:00", text:"Demo and Showcase" },
-				{ id:12, classname:"yellow", start_date: "2024-04-19 11:00", end_date: "2024-04-19 17:00", text:"Quality Assurance Spa Day" },
-				{ id:13, classname:"violet", start_date: "2024-04-20 01:00", end_date: "2024-04-20 03:00", text:"Motion Cycling Adventure" },
-				{ id:14, classname:"blue", start_date: "2024-04-20 10:00", end_date: "2024-04-20 16:00", text:"Competitor Analysis Beach Day" },
-                  { id:15, classname:"blue", start_date: "2024-04-21 02:00", end_date: "2024-04-21 06:00", text:"Creativity Painting Retreat" }
-                        ]);
+            scheduler.init('scheduler_here',new Date(2024,3,20),"week");
 
-            function toInputValue(date){
-                const tz = date.getTimezoneOffset() * 60000;
-                return new Date(date - tz).toISOString().slice(0,19);
-            }
-
-            let currentId = null;
-
-            function fillForm(ev){
-                document.getElementById("form_text").value = ev.text || "";
-                document.getElementById("form_start").value = toInputValue(ev.start_date);
-                document.getElementById("form_end").value = toInputValue(ev.end_date);
-            }
-
-            function fillFormById(id){
-                if(!id) return;
-                const ev = scheduler.getEvent(id);
-                if(ev){
-                    currentId = id;
-                    fillForm(ev);
-                }
-            }
-
-            scheduler.attachEvent("onClick", function(id){
-                fillFormById(id);
-                return true;
-            });
-
-            scheduler.attachEvent("onEventDrag", function(id){
-                fillFormById(id);
-                return true;
-            });
-
-            scheduler.attachEvent("onEventChanged", function(id){
-                fillFormById(id);
-                return true;
-            });
-
-            scheduler.attachEvent("onEventAdded", function(id){
-                fillFormById(id);
-                return true;
-            });
-
-            document.getElementById("form_save").addEventListener("click", function(){
-                if(!currentId) return;
-                const ev = scheduler.getEvent(currentId);
-                if(!ev) return;
-                ev.text = document.getElementById("form_text").value;
-                ev.start_date = new Date(document.getElementById("form_start").value);
-                ev.end_date = new Date(document.getElementById("form_end").value);
-                scheduler.updateEvent(currentId);
-            });
-
-            document.getElementById("form_cancel").addEventListener("click", function(){
-                if(currentId) fillFormById(currentId);
-            });
+            const events = [
+                { id:1, start_date: "2024-04-15 02:00", end_date: "2024-04-15 10:20", text:"Product Strategy Hike", href:"https://example.com/1" },
+                { id:2, start_date: "2024-04-15 12:00", end_date: "2024-04-15 16:00", text:"Agile Meditation and Release", href:"https://example.com/2" },
+                { id:3, start_date: "2024-04-16 06:00", end_date: "2024-04-16 11:00", text:"Tranquil Tea Time", href:"https://example.com/3" },
+                { id:4, start_date: "2024-04-16 11:30", end_date: "2024-04-16 19:00", text:"Sprint Review and Retreat", href:"https://example.com/4" },
+                { id:5, start_date: "2024-04-17 01:00", end_date: "2024-04-17 03:00", text:"Kayaking Workshop", href:"https://example.com/5" },
+                { id:6, start_date: "2024-04-17 06:00", end_date: "2024-04-17 08:00", text:"Stakeholder Sunset Yoga Session", href:"https://example.com/6" },
+                { id:7, start_date: "2024-04-17 07:00", end_date: "2024-04-17 12:00", text:"Roadmap Alignment Walk", href:"https://example.com/7" },
+                { id:8, start_date: "2024-04-17 13:00", end_date: "2024-04-17 18:00", text:"Mindful Team Building", href:"https://example.com/8" },
+                { id:9, start_date: "2024-04-18 01:00", end_date: "2024-04-18 18:00", text:"Cross-Functional Expedition", href:"https://example.com/9" },
+                { id:10, start_date: "2024-04-18 14:00", end_date: "2024-04-18 20:00", text:"User Feedback Picnic", href:"https://example.com/10" },
+                { id:11, start_date: "2024-04-19 03:00", end_date: "2024-04-19 08:00", text:"Demo and Showcase", href:"https://example.com/11" },
+                { id:12, start_date: "2024-04-19 11:00", end_date: "2024-04-19 17:00", text:"Quality Assurance Spa Day", href:"https://example.com/12" },
+                { id:13, start_date: "2024-04-20 01:00", end_date: "2024-04-20 03:00", text:"Motion Cycling Adventure", href:"https://example.com/13" },
+                { id:14, start_date: "2024-04-20 10:00", end_date: "2024-04-20 16:00", text:"Competitor Analysis Beach Day", href:"https://example.com/14" },
+                { id:15, start_date: "2024-04-21 02:00", end_date: "2024-04-21 06:00", text:"Creativity Painting Retreat", href:"https://example.com/15" }
+            ];
+            events.forEach(ev => { ev.color = colorFor(ev.text); ev.textColor = "#fff"; });
+            scheduler.parse(events);
 
                 });
 	</script>
 </head>
 <body>
-    <div id="event_form">
-                <h3>Event Details</h3>
-                <label>Text: <input type="text" id="form_text"></label><br/>
-                <label>Start: <input type="datetime-local" id="form_start" step="1"></label><br/>
-                <label>End: <input type="datetime-local" id="form_end" step="1"></label><br/>
-                <button id="form_save">Save</button>
-                <button id="form_cancel">Cancel</button>
-        </div>
         <div id="scheduler_here" class="dhx_cal_container" style='width:100%; height:100%;'>
 		<div class="dhx_cal_navline">
 			<div class="dhx_cal_prev_button"></div>
