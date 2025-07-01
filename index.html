@@ -5,13 +5,29 @@
 	<title>Basic initialization</title>
 	<script src="./dhtmlxscheduler.js?v=7.2.6" charset="utf-8"></script>
 	<link rel="stylesheet" href="./dhtmlxscheduler.css" type="text/css" charset="utf-8">
-	<style>
-		html, body{
-			margin:0px;
-			padding:0px;
-			height:100%;
-			overflow:hidden;
-		}
+        <style>
+                html, body{
+                        margin:0px;
+                        padding:0px;
+                        height:100%;
+                        overflow:hidden;
+                }
+
+                #event_form{
+                        position:fixed;
+                        top:0;
+                        left:0;
+                        width:300px;
+                        height:100%;
+                        overflow-y:auto;
+                        background:#f4f4f4;
+                        padding:10px;
+                        box-sizing:border-box;
+                }
+
+                #scheduler_here{
+                        margin-left:320px;
+                }
 
 		.violet{
 			--dhx-scheduler-event-background: linear-gradient(180deg, #D071EF 0%, #EE71D5 100%);
@@ -31,17 +47,17 @@
                 
 			});
 
-			scheduler.config.cascade_event_display = true;
-			scheduler.config.details_on_create = true;
-			scheduler.config.details_on_dblclick = true;
-            scheduler.config.time_step = 1; // 1초 단위
+                        scheduler.config.cascade_event_display = true;
+                        scheduler.config.details_on_create = false;
+                        scheduler.config.details_on_dblclick = false;
+            scheduler.config.time_step = 1/60; // 1초 단위
 
 			scheduler.templates.event_class = function(start, end, event){
 				return event.classname || "";
 			};
 			scheduler.init('scheduler_here',new Date(2024,3,20),"week");
-			scheduler.parse([
-				{ id:1, classname:"blue", start_date: "2024-04-15 02:00", end_date: "2024-04-15 10:20", text:"Product Strategy Hike" },
+                        scheduler.parse([
+                                { id:1, classname:"blue", start_date: "2024-04-15 02:00", end_date: "2024-04-15 10:20", text:"Product Strategy Hike" },
 				{ id:2, classname:"blue", start_date: "2024-04-15 12:00", end_date: "2024-04-15 16:00", text:"Agile Meditation and Release" },
 				{ id:3, classname:"violet", start_date: "2024-04-16 06:00", end_date: "2024-04-16 11:00", text:"Tranquil Tea Time" },
 				{ id:4, classname:"green", start_date: "2024-04-16 11:30", end_date: "2024-04-16 19:00", text:"Sprint Review and Retreat" },
@@ -55,13 +71,33 @@
 				{ id:12, classname:"yellow", start_date: "2024-04-19 11:00", end_date: "2024-04-19 17:00", text:"Quality Assurance Spa Day" },
 				{ id:13, classname:"violet", start_date: "2024-04-20 01:00", end_date: "2024-04-20 03:00", text:"Motion Cycling Adventure" },
 				{ id:14, classname:"blue", start_date: "2024-04-20 10:00", end_date: "2024-04-20 16:00", text:"Competitor Analysis Beach Day" },
-				{ id:15, classname:"blue", start_date: "2024-04-21 02:00", end_date: "2024-04-21 06:00", text:"Creativity Painting Retreat" }
-			]);
-		});
+                                { id:15, classname:"blue", start_date: "2024-04-21 02:00", end_date: "2024-04-21 06:00", text:"Creativity Painting Retreat" }
+                        ]);
+
+                        function toInputValue(date){
+                                const tz = date.getTimezoneOffset() * 60000;
+                                return new Date(date - tz).toISOString().slice(0,19);
+                        }
+
+                        scheduler.attachEvent("onClick", function(id){
+                                const ev = scheduler.getEvent(id);
+                                document.getElementById("form_text").value = ev.text || "";
+                                document.getElementById("form_start").value = toInputValue(ev.start_date);
+                                document.getElementById("form_end").value = toInputValue(ev.end_date);
+                                return true;
+                        });
+
+                });
 	</script>
 </head>
 <body>
-	<div id="scheduler_here" class="dhx_cal_container" style='width:100%; height:100%;'>
+        <div id="event_form">
+                <h3>Event Details</h3>
+                <label>Text: <input type="text" id="form_text"></label><br/>
+                <label>Start: <input type="datetime-local" id="form_start" step="1"></label><br/>
+                <label>End: <input type="datetime-local" id="form_end" step="1"></label><br/>
+        </div>
+        <div id="scheduler_here" class="dhx_cal_container" style='width:100%; height:100%;'>
 		<div class="dhx_cal_navline">
 			<div class="dhx_cal_prev_button"></div>
 			<div class="dhx_cal_next_button"></div>
@@ -75,6 +111,6 @@
 		<div class="dhx_cal_header">
 		</div>
 		<div class="dhx_cal_data">
-		</div>
-	</div>
-</div>
+        </div>
+</body>
+</html>
