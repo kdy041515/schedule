@@ -47,10 +47,13 @@
                 
 			});
 
-                        scheduler.config.cascade_event_display = true;
-                        scheduler.config.details_on_create = false;
-                        scheduler.config.details_on_dblclick = false;
+            scheduler.config.cascade_event_display = true;
+            scheduler.config.details_on_create = false;
+            scheduler.config.details_on_dblclick = false;
             scheduler.config.time_step = 1/60; // 1초 단위
+            scheduler.config.hour_date = "%H:%i:%s";
+
+            scheduler.templates.tooltip_date_format = scheduler.date.date_to_str("%Y-%m-%d %H:%i:%s");
 
 			scheduler.templates.event_class = function(start, end, event){
 				return event.classname || "";
@@ -79,13 +82,37 @@
                                 return new Date(date - tz).toISOString().slice(0,19);
                         }
 
-                        scheduler.attachEvent("onClick", function(id){
-                                const ev = scheduler.getEvent(id);
-                                document.getElementById("form_text").value = ev.text || "";
-                                document.getElementById("form_start").value = toInputValue(ev.start_date);
-                                document.getElementById("form_end").value = toInputValue(ev.end_date);
-                                return true;
-                        });
+            function fillForm(ev){
+                document.getElementById("form_text").value = ev.text || "";
+                document.getElementById("form_start").value = toInputValue(ev.start_date);
+                document.getElementById("form_end").value = toInputValue(ev.end_date);
+            }
+
+            function fillFormById(id){
+                if(!id) return;
+                const ev = scheduler.getEvent(id);
+                if(ev) fillForm(ev);
+            }
+
+            scheduler.attachEvent("onClick", function(id){
+                fillFormById(id);
+                return true;
+            });
+
+            scheduler.attachEvent("onEventDrag", function(id){
+                fillFormById(id);
+                return true;
+            });
+
+            scheduler.attachEvent("onEventChanged", function(id){
+                fillFormById(id);
+                return true;
+            });
+
+            scheduler.attachEvent("onEventAdded", function(id){
+                fillFormById(id);
+                return true;
+            });
 
                 });
 	</script>
