@@ -45,6 +45,12 @@
             position: relative;
             height: 80px;
         }
+        .slot_count {
+            font-size:10px;
+            color:#666;
+            text-align:right;
+            margin-bottom:2px;
+        }
         .event_item {
             position: relative;
             border: 1px solid #ccc;
@@ -175,6 +181,7 @@
     ];
     const eventColorMap = {};
     let nextColorIndex = 0;
+    let lastColorIndex = -1;
     const cellMap = {};
 
     for (let h = 6; h <= 23; h++) {
@@ -184,9 +191,12 @@
         }));
         dates.forEach(d => {
             const td = document.createElement('td');
+            const count = document.createElement('div');
+            count.className = 'slot_count';
+            td.appendChild(count);
             const dayKey = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
             const cellKey = `${dayKey}_${pad(h)}`;
-            cellMap[cellKey] = { td, items: [], segUsed: new Array(240).fill(false) };
+            cellMap[cellKey] = { td, count, items: [], segUsed: new Array(240).fill(false) };
             tr.appendChild(td);
         });
         tbody.appendChild(tr);
@@ -275,12 +285,13 @@
             if (!cell.segUsed[i]) {
                 const empty = document.createElement('div');
                 empty.className = 'item_empty';
-                empty.textContent = 'X';
                 cell.items.push({element: empty, startIdx: i});
             }
         }
         cell.items.sort((a,b) => a.startIdx - b.startIdx);
         cell.items.forEach(it => cell.td.appendChild(it.element));
+        const used = cell.segUsed.filter(Boolean).length;
+        cell.count.textContent = `${used} / 240`;
     });
 
     function pickColorIndex() {
