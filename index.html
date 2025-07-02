@@ -173,6 +173,7 @@
     ];
     const eventColorMap = {};
     let nextColorIndex = 0;
+    const cellMap = {};
 
     for (let h = 6; h <= 23; h++) {
         const tr = document.createElement('tr');
@@ -207,11 +208,11 @@
             const td = tr.children[1 + colIdx];
 
             const segStart = hour === startHour
-            ? start
-            : new Date(`${dayStr} ${pad(hour)}:00:00`);
+                ? start
+                : new Date(`${dayStr} ${pad(hour)}:00:00`);
             const segEnd = hour === endHour
-            ? end
-            : new Date(`${dayStr} ${pad(hour+1)}:00:00`);
+                ? end
+                : new Date(`${dayStr} ${pad(hour+1)}:00:00`);
 
             const segDurSec = (segEnd - segStart) / 1000;
             const heightPx  = segDurSec / 15 * 16;
@@ -230,26 +231,55 @@
             item.style.color = `${myColor}`;
 
             if (hour === startHour) {
-            // 첫 블록에만 시간/제목 정보
-            const timeSpan = document.createElement('span');
-            timeSpan.className = 'time';
-            timeSpan.innerHTML =
-                `${pad(start.getHours())}:${pad(start.getMinutes())}:${pad(start.getSeconds())}` +
-                '~' +
-                `${pad(end.getHours())}:${pad(end.getMinutes())}:${pad(end.getSeconds())}` +
-                ` <strong>x${segDurSec/15}</strong>`;
+                // 첫 블록에만 시간/제목 정보
+                const timeSpan = document.createElement('span');
+                timeSpan.className = 'time';
+                timeSpan.innerHTML =
+                    `${pad(start.getHours())}:${pad(start.getMinutes())}:${pad(start.getSeconds())}` +
+                    '~' +
+                    `${pad(end.getHours())}:${pad(end.getMinutes())}:${pad(end.getSeconds())}` +
+                    ` <strong>x${segDurSec/15}</strong>`;
 
-            const subj = document.createElement('span');
-            subj.className = 'subject';
-            const a = document.createElement('a');
-            a.href = ev.href;
-            a.title = ev.text;
-            a.textContent = ev.text;
-            subj.appendChild(a);
-            item.append(timeSpan, subj);
+                const subj = document.createElement('span');
+                subj.className = 'subject';
+                const a = document.createElement('a');
+                a.href = ev.href;
+                a.title = ev.text;
+                a.textContent = ev.text;
+                subj.appendChild(a);
+                item.append(timeSpan, subj);
             }
-            td.appendChild(item);
+
+            const cellKey = `${dayStr}_${pad(hour)}`;
+            if (!cellMap[cellKey]) {
+                cellMap[cellKey] = {
+                    td,
+                    items: [],
+                    segUsed: new Array(240).fill(false)
+                };
+            }
+            const cell = cellMap[cellKey];
+            const base = new Date(`${dayStr} ${pad(hour)}:00:00`);
+            const startIdx = Math.floor((segStart - base) / 15000);
+            const endIdx   = Math.floor((segEnd - base) / 15000);
+            item.dataset.segStart = startIdx;
+            cell.items.push({element: item, startIdx});
+            for (let i = startIdx; i < endIdx; i++) {
+                cell.segUsed[i] = true;
+            }
         }
+    });
+
+    Object.values(cellMap).forEach(cell => {
+        for (let i = 0; i < 240; i++) {
+            if (!cell.segUsed[i]) {
+                const empty = document.createElement('div');
+                empty.className = 'item_empty';
+                cell.items.push({element: empty, startIdx: i});
+            }
+        }
+        cell.items.sort((a,b) => a.startIdx - b.startIdx);
+        cell.items.forEach(it => cell.td.appendChild(it.element));
     });
 
     function pickColorIndex() {
