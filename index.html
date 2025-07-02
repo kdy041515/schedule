@@ -181,10 +181,16 @@
 
     for (let h = 6; h <= 23; h++) {
         const tr = document.createElement('tr');
-            tr.appendChild(Object.assign(document.createElement('th'), {
+        tr.appendChild(Object.assign(document.createElement('th'), {
             textContent: `${pad(h)}:00`,
-            }));
-        dates.forEach(_ => tr.appendChild(document.createElement('td')));
+        }));
+        dates.forEach(d => {
+            const td = document.createElement('td');
+            const dayKey = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+            const cellKey = `${dayKey}_${pad(h)}`;
+            cellMap[cellKey] = { td, items: [], segUsed: new Array(240).fill(false) };
+            tr.appendChild(td);
+        });
         tbody.appendChild(tr);
     }
     events.forEach(ev => {
@@ -209,7 +215,6 @@
             const rowIdx = hour - 6;
             if (rowIdx < 0 || rowIdx >= tbody.children.length) continue;
             const tr = tbody.children[rowIdx];
-            const td = tr.children[1 + colIdx];
 
             const segStart = hour === startHour
                 ? start
@@ -255,13 +260,6 @@
             }
 
             const cellKey = `${dayStr}_${pad(hour)}`;
-            if (!cellMap[cellKey]) {
-                cellMap[cellKey] = {
-                    td,
-                    items: [],
-                    segUsed: new Array(240).fill(false)
-                };
-            }
             const cell = cellMap[cellKey];
             const base = new Date(`${dayStr} ${pad(hour)}:00:00`);
             const startIdx = Math.floor((segStart - base) / 15000);
